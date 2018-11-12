@@ -4,11 +4,22 @@ language: c
 cache: ccache
 compiler:
   - gcc
+addons:
+  apt:
+    sources:
+      - ubuntu-toolchain-r-test
+    packages:
+      - gcc-6
+      - g++-6
+
+git:
+  submodules: false
 
 before_script:
   - sudo apt-get update -y
   - sudo apt-get install qemu-kvm libxen-dev libseccomp-dev -y
   - sudo apt-get install --only-upgrade binutils gcc -y
+  - bash travis_wait.sh 60 git submodule update --init
 
 env:
   - PLATFORM=solo5 MACHINE=x86_64 TESTS=spt EXTRAFLAGS=
@@ -18,7 +29,7 @@ env:
   - PLATFORM=hw MACHINE=x86_64 TESTS=none KERNONLY=-k EXTRAFLAGS= 
 
 script:
-  - bash travis_wait.sh 60 git submodule update --init
+  - export CC=gcc-6
   - ./build-rr.sh -o myobj -j16 -qq ${KERNONLY} ${PLATFORM} ${EXTRAFLAGS}
   - . ./myobj/config
   - ./tests/buildtests.sh ${KERNONLY}
