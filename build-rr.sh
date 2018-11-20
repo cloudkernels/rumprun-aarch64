@@ -56,6 +56,8 @@ helpme ()
 	exit 1
 }
 
+CC=${CC:-cc}
+
 BUILDRUMP=$(pwd)/buildrump.sh
 
 # overriden by script if true
@@ -290,12 +292,12 @@ setvars ()
 		RROBJ="./obj-${MACHINE}-${PLATFORM}${GITBRANCH}${EXTSRC}"
 		${KERNONLY} && RROBJ="${RROBJ}-kernonly"
 	fi
+	abspath RROBJ
 	STAGING="${RROBJ}/dest.stage"
 	BROBJ="${RROBJ}/buildrump.sh"
 	RUMPTOOLS="${RROBJ}/rumptools"
 
 	abspath RRDEST
-	abspath RROBJ
 	abspath RUMPSRC
 }
 
@@ -309,7 +311,7 @@ checktools ()
 	delay=5
 
 	# check that gcc is modern enough
-	vers=$(${CC:-cc} -E -dM - < /dev/null | LANG=C awk '
+	vers=$(${CC} -E -dM - < /dev/null | LANG=C awk '
 	    /__GNUC__/ {version += 100*$3}
 	    /__GNUC_MINOR__/ {version += $3}
 	    END { print version; if (version) exit 0; exit 1; }') \
@@ -326,7 +328,7 @@ checktools ()
 	fi
 
 	# check that ld is modern enough
-	vers=$(${CC:-cc} -Wl,--version 2>&1 | LANG=C awk '
+	vers=$(${CC} -Wl,--version 2>&1 | LANG=C awk '
 	    /GNU ld/{version += 100*$NF}
 	    END { print version; if (version) exit 0; exit 1; }') \
 		|| die unable to probe ld version
@@ -361,6 +363,13 @@ buildrump ()
 	extracflags=
 	[ "${MACHINE_GNU_ARCH}" = "x86_64" ] \
 	    && extracflags="-F CFLAGS=-mno-red-zone ${TLSCFLAGS} -F CFLAGS=-DHZ=100"
+		
+	
+	# Disable new errors on GCC 7 which break netbsd-src compilation
+	#
+	[ `${CC} -dumpversion | cut -f1 -d.` -ge 7 ] \
+		&& extracflags="$extracflags -F CPPFLAGS=-Wimplicit-fallthrough=0"	
+
 
 	# build tools
 	${BUILDRUMP}/buildrump.sh ${BUILD_QUIET} ${STDJ} -k		\
@@ -374,7 +383,7 @@ buildrump ()
 	echo '>> further setup for rumprun build'
 	echo '>>'
 
-	RUMPMAKE=$(pwd)/${RUMPTOOLS}/rumpmake
+	RUMPMAKE=${RUMPTOOLS}/rumpmake
 
 	TOOLTUPLE=$(${RUMPMAKE} -f bsd.own.mk \
 	    -V '${MACHINE_GNU_PLATFORM:S/--netbsd/-rumprun-netbsd/}')
@@ -480,7 +489,7 @@ makeconfig ()
 	echo "BUILDRUMP=${quote}${BUILDRUMP}${quote}" > ${1}
 	echo "RUMPSRC=${quote}${RUMPSRC}${quote}" >> ${1}
 	echo "RUMPMAKE=${quote}${RUMPMAKE}${quote}" >> ${1}
-	echo "BUILDRUMP_TOOLFLAGS=${quote}$(pwd)/${RUMPTOOLS}/toolchain-conf.mk${quote}" >> ${1}
+	echo "BUILDRUMP_TOOLFLAGS=${quote}${RUMPTOOLS}/toolchain-conf.mk${quote}" >> ${1}
 	echo "MACHINE=${quote}${MACHINE}${quote}" >> ${1}
 	echo "MACHINE_GNU_ARCH=${quote}${MACHINE_GNU_ARCH}${quote}" >> ${1}
 	echo "TOOLTUPLE=${quote}${TOOLTUPLE}${quote}" >> ${1}
@@ -503,6 +512,14 @@ makeconfig ()
 	else
 		echo "CONFIG_CXX=no" >> ${1}
 	fi
+
+	# Check for if compiler supports -no-pie and save to EXTRACCFLAGS
+	gccnopie=
+	if [ -z "`echo 'int p=1;' | ${CC} -no-pie -S -o /dev/null -x c - 2>&1`" ]; then
+		gccnopie=-no-pie
+	fi
+	echo "EXTRACCFLAGS=${quote}${gccnopie}${quote}" >> ${1}
+
 }
 
 dobuild ()
