@@ -3,4 +3,4 @@
 	url = https://github.com/nabla-containers/buildrump.sh.git
 [submodule "src-netbsd"]
 	path = src-netbsd
-	url = https://github.com/rumpkernel/src-netbsd
+	url = https://github.com/cloudkernels/src-netbsd.git

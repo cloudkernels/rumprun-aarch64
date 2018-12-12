@@ -360,9 +360,9 @@ buildrump ()
 		TLSCFLAGS="-F CFLAGS=-D_PTHREAD_GETTCB_EXT=_lwp_get_tls_tcb"
 	fi
 
-	extracflags=
+	extracflags="${TLSCFLAGS} -F CFLAGS=-DHZ=100"
 	[ "${MACHINE_GNU_ARCH}" = "x86_64" ] \
-	    && extracflags="-F CFLAGS=-mno-red-zone ${TLSCFLAGS} -F CFLAGS=-DHZ=100"
+	    && extracflags="$extracflags -F CFLAGS=-mno-red-zone"
 		
 	
 	# Disable new errors on GCC 7 which break netbsd-src compilation
