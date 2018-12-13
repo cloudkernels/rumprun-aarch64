@@ -11,7 +11,7 @@ END(bmk_cpu_sched_bouncer)
  * x1 = new thread
  */
 ENTRY(bmk_cpu_sched_switch)
-	stp x29, lr, [sp, #-96]!
+	stp x29, x30, [sp, #-96]!
 	stp x19, x20, [sp, #16]
 	stp x21, x22, [sp, #32]
 	stp x23, x24, [sp, #48]
@@ -30,6 +30,6 @@ ENTRY(bmk_cpu_sched_switch)
 	ldp x23, x24, [sp, #48]
 	ldp x25, x26, [sp, #64]
 	ldp x27, x28, [sp, #80]
-	ldp x29, lr, [sp], #96
+	ldp x29, x30, [sp], #96
 	ret
 END(bmk_cpu_sched_switch)
