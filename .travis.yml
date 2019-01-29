@@ -18,7 +18,7 @@ env:
   - PLATFORM=hw MACHINE=x86_64 TESTS=none KERNONLY=-k EXTRAFLAGS= 
 
 script:
-  - git submodule update --init
+  - bash travis_wait.sh 60 git submodule update --init
   - ./build-rr.sh -o myobj -j16 -qq ${KERNONLY} ${PLATFORM} ${EXTRAFLAGS}
   - . ./myobj/config
   - ./tests/buildtests.sh ${KERNONLY}
